@@ -11,6 +11,38 @@ function configFile(overrides: Record<string, unknown>): string {
   return path;
 }
 
+describe("hostedPathPrefix", () => {
+  it("takes the prefix from the environment, so a public repo never carries it", () => {
+    const path = configFile({ delivery: "hosted", hostedPathPrefix: "" });
+    const c = loadConfigFile(path, { CJ_HOSTED_PATH_PREFIX: "s3cretSlug" });
+    expect(c.hostedPathPrefix).toBe("s3cretSlug");
+  });
+
+  it("lets the environment override a value left in the file", () => {
+    const path = configFile({ delivery: "hosted", hostedPathPrefix: "in-the-repo" });
+    expect(loadConfigFile(path, { CJ_HOSTED_PATH_PREFIX: "from-env" }).hostedPathPrefix).toBe(
+      "from-env",
+    );
+  });
+
+  it("refuses hosted delivery with no prefix at all", () => {
+    // Publishing at the root would put the catalogue at a guessable URL.
+    const path = configFile({ delivery: "hosted", hostedPathPrefix: "" });
+    expect(() => loadConfigFile(path, {})).toThrow(/CJ_HOSTED_PATH_PREFIX/);
+  });
+
+  it("does not require a prefix for SFTP delivery", () => {
+    const path = configFile({ delivery: "sftp", hostedPathPrefix: "" });
+    expect(loadConfigFile(path, {}).hostedPathPrefix).toBe("");
+  });
+
+  it("rejects a prefix with a slash or other unsafe characters", () => {
+    const path = configFile({ delivery: "hosted" });
+    expect(() => loadConfigFile(path, { CJ_HOSTED_PATH_PREFIX: "a/b" })).toThrow(/URL-safe/);
+    expect(() => loadConfigFile(path, { CJ_HOSTED_PATH_PREFIX: "a b" })).toThrow(/URL-safe/);
+  });
+});
+
 describe("loadConfigFile", () => {
   it("fills in defaults", () => {
     const c = loadConfigFile(configFile({}));

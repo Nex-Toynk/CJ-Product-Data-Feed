@@ -44,6 +44,9 @@ jobs:
           SHOPIFY_SHOP: ${{ secrets.SHOPIFY_SHOP }}
           SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
           SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+          # Kept out of the repo so a public repository does not publish the
+          # feed's URL along with the code.
+          CJ_HOSTED_PATH_PREFIX: ${{ secrets.CJ_HOSTED_PATH_PREFIX }}
         run: |
           npx tsx src/cli.ts \
             ${{ inputs.dry_run && '--dry-run' || '' }} \

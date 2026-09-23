@@ -105,12 +105,16 @@ https://<org>.github.io/<repo>/<hostedPathPrefix>/<fileName>
 
 Put that URL into CJ's feed settings with Delivery Method **Client HTTP/S (Fetch)**.
 
-`hostedPathPrefix` is a random path segment so the file is not sitting somewhere guessable. Generate
-your own — don't ship the example value:
+The feed sits behind a random path segment so it is not at a guessable URL. **That segment never
+goes in the repo** — it comes from the `CJ_HOSTED_PATH_PREFIX` secret, because a value committed
+here is readable by anyone with access to the repository, including in git history. Generate one:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(9).toString('base64url'))"
 ```
+
+Add it as a repository secret named `CJ_HOSTED_PATH_PREFIX`. A `hosted` run refuses to start
+without it rather than publishing the catalogue at the site root.
 
 **Understand what this exposes.** CJ's fetch sends no credentials, so the URL cannot be
 protected. Anyone with the link can download your whole catalogue — SKUs, prices and stock
@@ -119,11 +123,16 @@ bulk. The workflow adds a `robots.txt` disallowing crawlers and puts nothing at 
 that hints at the path, which is obscurity, not security. If that trade is not acceptable, use
 SFTP.
 
-**Two GitHub Pages limits worth checking first.** On the Free plan, Pages only works from a
-**public repo** — which would publish this source too. Pro, Team and Enterprise can publish
-Pages from a private repo, though the site itself stays publicly readable. And Pages has a 1 GB
-site limit with a soft 100 GB/month bandwidth cap; a 52 MB feed fetched once a day is nowhere
+**GitHub Pages limits worth knowing.** On the Free plan, Pages only works from a **public
+repo**; Pro, Team and Enterprise can publish Pages from a private one. Either way the published
+site is publicly readable — which is required, since CJ cannot authenticate. Pages has a 1 GB
+site limit and a soft 100 GB/month bandwidth cap; a 52 MB feed fetched once a day is nowhere
 near either.
+
+**If the repository is public**, check before making it so: `CJ_HOSTED_PATH_PREFIX` must be a
+secret and not in any commit, and `git log --all --full-history -- .env` must come back empty.
+Rotate the prefix if an earlier commit ever contained one — history stays readable after the
+repo goes public.
 
 If the repo must stay private on a Free plan, publish the `site/` directory somewhere else
 instead — Vercel, Netlify, S3 + CloudFront, Cloudflare R2 — and point CJ at that URL. The
@@ -144,7 +153,7 @@ and writes a summary table to the run page.
 |---|---|
 | `fileName` | Must match CJ exactly, forever. Dates and placeholders are rejected at load. |
 | `delivery` | `"sftp"` or `"hosted"` — see above. |
-| `hostedPathPrefix` | Random URL path segment used when hosting. Not a secret; just unguessable. |
+| `hostedPathPrefix` | Random URL path segment used when hosting. Set it via the `CJ_HOSTED_PATH_PREFIX` environment variable, not in this file. |
 | `format` | `CSV`, `TSV`, `PIPE` or `XML`. The extension must agree. |
 | `quotedValues` | Must match the Quoted Values setting in CJ's feed registration. |
 | `currency`, `targetCountry`, `condition` | Applied to every row. |

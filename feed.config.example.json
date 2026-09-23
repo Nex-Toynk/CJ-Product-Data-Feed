@@ -1,7 +1,7 @@
 {
   "fileName": "toynk-product-feed.csv",
   "delivery": "hosted",
-  "hostedPathPrefix": "CHANGE-ME-random-slug",
+  "hostedPathPrefix": "",
   "format": "CSV",
   "quotedValues": true,
   "currency": "USD",

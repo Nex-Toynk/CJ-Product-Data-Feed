@@ -25,8 +25,12 @@ export interface FeedConfigFile {
   delivery: Delivery;
   /**
    * Path segment placed before the file name when delivery is "hosted", so the
-   * feed is not sitting at a guessable URL. Not a secret — CJ cannot send
-   * credentials — just not something a crawler will stumble onto.
+   * feed is not sitting at a guessable URL. CJ cannot send credentials, so this
+   * is the only thing keeping the catalogue from being trivially downloadable.
+   *
+   * In a PUBLIC repository this must come from the CJ_HOSTED_PATH_PREFIX
+   * environment variable, never from this file — a committed value is readable
+   * by anyone, including in git history.
    */
   hostedPathPrefix: string;
   format: FeedFormat;
@@ -142,7 +146,10 @@ export function loadEnvFile(path = ".env", env: NodeJS.ProcessEnv = process.env)
   }
 }
 
-export function loadConfigFile(path = "feed.config.json"): FeedConfigFile {
+export function loadConfigFile(
+  path = "feed.config.json",
+  env: NodeJS.ProcessEnv = process.env,
+): FeedConfigFile {
   let raw: string;
   try {
     raw = readFileSync(resolve(path), "utf8");
@@ -163,6 +170,12 @@ export function loadConfigFile(path = "feed.config.json"): FeedConfigFile {
   }
 
   const config = { ...DEFAULTS, ...(parsed as Partial<FeedConfigFile>) };
+
+  // The path prefix is the one config value that must be able to live outside
+  // the repo, so it survives the repo being public.
+  const fromEnv = env.CJ_HOSTED_PATH_PREFIX?.trim();
+  if (fromEnv) config.hostedPathPrefix = fromEnv;
+
   validate(config, path);
   return config;
 }
@@ -176,6 +189,14 @@ function validate(c: FeedConfigFile, path: string): void {
   if (c.delivery !== "sftp" && c.delivery !== "hosted") fail('delivery must be "sftp" or "hosted"');
   if (c.hostedPathPrefix && !/^[A-Za-z0-9._~-]+$/.test(c.hostedPathPrefix)) {
     fail("hostedPathPrefix must be a single URL-safe path segment (letters, digits, . _ ~ -)");
+  }
+  if (c.delivery === "hosted" && !c.hostedPathPrefix) {
+    // Publishing at the root would put the whole catalogue at a guessable URL.
+    fail(
+      'delivery is "hosted" but hostedPathPrefix is empty. Set the CJ_HOSTED_PATH_PREFIX ' +
+        "environment variable to an unguessable path segment — generate one with: " +
+        "node -e \"console.log(require('crypto').randomBytes(9).toString('base64url'))\"",
+    );
   }
 
   // CJ identifies a submission by its file name, so it has to be constant.

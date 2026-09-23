@@ -1,0 +1,26 @@
+{
+  "name": "cj-feed",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.10"
+  },
+  "scripts": {
+    "feed": "tsx src/cli.ts",
+    "feed:dry": "tsx src/cli.ts --dry-run",
+    "sample": "tsx scripts/sample-feed.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ssh2-sftp-client": "^12.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/ssh2-sftp-client": "^9.0.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.11"
+  }
+}

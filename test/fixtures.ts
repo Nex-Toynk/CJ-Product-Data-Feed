@@ -1,0 +1,60 @@
+import type { FeedOptions, ShopifyProduct } from "../src/cj/types";
+
+export const baseOptions: FeedOptions = {
+  currency: "USD",
+  targetCountry: "US",
+  condition: "new",
+  linkUtm: "utm_source=cj&utm_medium=affiliate",
+  flatShippingPrice: "0",
+  shippingCountry: "US",
+  taxRate: null,
+  colorOptionName: "Color",
+  sizeOptionName: "Size",
+  ageGroup: null,
+  metafieldNamespace: "cj",
+  mappingOverrides: {},
+  customLabels: {},
+  includeOutOfStock: true,
+  excludeTags: [],
+  includeTags: [],
+  excludeVendors: [],
+  minPrice: null,
+  maxRows: null,
+};
+
+export function product(overrides: Partial<ShopifyProduct> = {}): ShopifyProduct {
+  return {
+    id: "gid://shopify/Product/111",
+    handle: "rocky-plush",
+    title: "Rocky Plush",
+    descriptionHtml: "<p>A <strong>soft</strong> Rocky.</p><ul><li>12 inches</li></ul>",
+    vendor: "Toynk",
+    productType: "Plush",
+    tags: ["plush", "scifi"],
+    status: "ACTIVE",
+    onlineStoreUrl: "https://example.myshopify.com/products/rocky-plush",
+    publishedAt: "2026-01-01T00:00:00Z",
+    isGiftCard: false,
+    categoryFullName: "Toys & Games > Toys > Stuffed Animals",
+    images: [{ url: "https://cdn.example.com/rocky.jpg", altText: "Rocky" }],
+    metafields: {},
+    variants: [
+      {
+        id: "gid://shopify/ProductVariant/999",
+        sku: "RCK-PLSH-12",
+        barcode: "012345678905",
+        title: "Default Title",
+        price: "24.99",
+        compareAtPrice: null,
+        availableForSale: true,
+        inventoryQuantity: 10,
+        inventoryPolicy: "DENY",
+        taxable: true,
+        selectedOptions: [],
+        images: [],
+        weight: { value: 0.5, unit: "POUNDS" },
+      },
+    ],
+    ...overrides,
+  };
+}

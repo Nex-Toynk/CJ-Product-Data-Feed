@@ -1,0 +1,37 @@
+{
+  "fileName": "toynk-product-feed.csv",
+  "delivery": "hosted",
+  "hostedPathPrefix": "CHANGE-ME-random-slug",
+  "format": "CSV",
+  "quotedValues": true,
+  "currency": "USD",
+  "targetCountry": "US",
+  "condition": "new",
+  "linkUtm": "utm_source=cj&utm_medium=affiliate",
+  "flatShippingPrice": "0",
+  "shippingCountry": "US",
+  "taxRate": null,
+  "colorOptionName": "Color",
+  "sizeOptionName": "Size",
+  "ageGroup": null,
+  "metafieldNamespace": "custom",
+  "includeDraft": false,
+  "requireOnlineStore": true,
+  "includeOutOfStock": true,
+  "excludeTags": [
+    "gift-card-product"
+  ],
+  "includeTags": [],
+  "excludeVendors": [],
+  "minPrice": null,
+  "maxRows": null,
+  "mappingOverrides": {
+    "google_product_category": "FIELD:category"
+  },
+  "customLabels": {
+    "custom_label_0": "METAFIELD:product_license",
+    "custom_label_1": "FIELD:productType"
+  },
+  "minRows": 30000,
+  "maxRejectRate": 0.02
+}

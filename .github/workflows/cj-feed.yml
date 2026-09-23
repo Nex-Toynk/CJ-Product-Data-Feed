@@ -1,0 +1,88 @@
+name: CJ product feed
+
+on:
+  schedule:
+    # 05:30 UTC daily. CJ's HTTP/S fetch happens once a day at a time it picks,
+    # so this only needs to run often enough that the file is never stale.
+    - cron: "30 5 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build the feed but do not publish it"
+        type: boolean
+        default: false
+
+concurrency:
+  # Shopify allows one bulk query per app per shop; never run two at once.
+  group: cj-feed
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      published: ${{ steps.build.outcome == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build feed
+        id: build
+        env:
+          SHOPIFY_SHOP: ${{ secrets.SHOPIFY_SHOP }}
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+        run: |
+          npx tsx src/cli.ts \
+            ${{ inputs.dry_run && '--dry-run' || '' }} \
+            --out-dir site --issues-out site/issues.json
+
+      - name: Prepare the site
+        run: |
+          # Pages would otherwise run Jekyll over the directory.
+          touch site/.nojekyll
+          # The feed lives behind an unguessable path; nothing at the root
+          # should hint at it, and nothing should be indexed.
+          printf 'User-agent: *\nDisallow: /\n' > site/robots.txt
+          printf 'CJ product feed endpoint.\n' > site/index.txt
+          # issues.json is diagnostics, not for publishing.
+          mv site/issues.json "$RUNNER_TEMP/issues.json" || true
+          find site -type f | sort
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-feed-issues-${{ github.run_number }}
+          path: ${{ runner.temp }}/issues.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Upload Pages artifact
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

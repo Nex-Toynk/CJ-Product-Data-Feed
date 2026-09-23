@@ -62,7 +62,9 @@ jobs:
           printf 'CJ product feed endpoint.\n' > site/index.txt
           # issues.json is diagnostics, not for publishing.
           mv site/issues.json "$RUNNER_TEMP/issues.json" || true
-          find site -type f | sort
+          # Count, don't list: on a public repo these logs are public, and the
+          # file paths contain the prefix that keeps the feed URL unguessable.
+          echo "site contains $(find site -type f | wc -l | tr -d ' ') files, $(du -sh site | cut -f1) total"
 
       - name: Upload diagnostics
         if: always()

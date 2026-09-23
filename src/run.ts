@@ -40,6 +40,15 @@ export interface RunResult {
 
 export class FeedError extends Error {}
 
+/**
+ * Keep the hosted path prefix out of logs and CI job summaries. GitHub masks
+ * secret values in Actions output, but a public repository's logs are not a
+ * place to rely on that alone for the one string keeping the feed URL private.
+ */
+function redact(text: string, secret: string | null | undefined): string {
+  return secret ? text.split(secret).join("***") : text;
+}
+
 export async function runFeed(options: RunOptions): Promise<RunResult> {
   const { config, secrets, admin, dryRun } = options;
   const log = options.log ?? (() => {});
@@ -162,7 +171,7 @@ export async function runFeed(options: RunOptions): Promise<RunResult> {
     mkdirSync(dirname(options.outPath), { recursive: true });
     writeFileSync(options.outPath, buffer);
     outPath = options.outPath;
-    log(`Wrote ${outPath}`);
+    log(`Wrote ${redact(outPath, config.hostedPathPrefix)}`);
   }
 
   let deliveredTo: string | null = null;
@@ -175,7 +184,7 @@ export async function runFeed(options: RunOptions): Promise<RunResult> {
         'delivery is "hosted" but no output path was given. Pass --out-dir (the directory your host publishes).',
       );
     }
-    deliveredTo = `hosted:${outPath}`;
+    deliveredTo = `hosted:${redact(outPath, config.hostedPathPrefix)}`;
     log("Written for hosting — CJ fetches it from your URL once per day");
   } else if (!secrets.sftp) {
     throw new FeedError(

@@ -275,3 +275,30 @@ describe("hosted delivery", () => {
     ).rejects.toThrow(/No SFTP credentials/);
   });
 });
+
+describe("keeping the hosted prefix out of logs", () => {
+  it("redacts the path prefix from log lines and the delivery record", async () => {
+    const jsonl = product(1, "SKU-1");
+    stubFetch(jsonl);
+    const { admin } = stubAdmin({ jsonl });
+    const dir = mkdtempSync(join(tmpdir(), "cjredact-"));
+    const outPath = join(dir, "s3cretSlug", "feed.csv");
+    const lines: string[] = [];
+
+    const result = await runFeed({
+      config: { ...CONFIG, delivery: "hosted", hostedPathPrefix: "s3cretSlug" },
+      secrets: SECRETS,
+      admin,
+      dryRun: false,
+      outPath,
+      log: (m) => lines.push(m),
+    });
+
+    // A public repo's Actions log must not carry the one string protecting the URL.
+    expect(lines.join("\n")).not.toContain("s3cretSlug");
+    expect(lines.some((l) => l.includes("***"))).toBe(true);
+    expect(result.deliveredTo).not.toContain("s3cretSlug");
+    // The file still goes to the real path.
+    expect(readFileSync(outPath, "utf8")).toContain("SKU-1");
+  });
+});
